@@ -35,13 +35,12 @@
 
 Some Kasa plugs firmware-flip the account setting **Me, Third-Party Compatibility** off. That puts the plug on TPAP and breaks the local `tplink` integration with a `403` at `handshake1`. The only documented fix is to toggle the setting back on in the Kasa app by hand, every time it happens. This integration does it for you.
 
-## Features
-
-- **One switch per plug** for Home Assistant compatibility (on = HA compatible, off = TPAP).
-- **Compatibility-state sensor** per plug (`compatible`, `tpap`, `unknown`) for dashboards and automations.
-- **Automatic self-heal**: when a plug flips to TPAP, compatibility is re-enabled on the next poll. Turn it off in Options for manual control.
-- **Two-factor sign-in** supported: if TP-Link challenges with MFA, you enter the emailed code once and the device is trusted after that.
-- **Cloud polling only**: it does not touch your plugs locally and does not need the Kasa app running.
+- **Enforcement switch** for the account-level Home Assistant compatibility setting: on re-applies the setting every poll, so a plug that firmware-flips it off is put back; off stops enforcing and turns it off once.
+- **Refresh now button** to enforce on demand, from the dashboard or an automation, without waiting for the next poll.
+- **Last check** timestamp sensor and a **compatibility-state** sensor (`compatible`, `tpap`, `unknown`) for dashboards and automations.
+- **15-minute poll** by default: gentle on the cloud API, with the button covering "enforce right now".
+- **Two-factor sign-in** supported: if TP-Link challenges with MFA (an emailed code, or an approval in the Kasa app), you complete it once and the device is trusted after that.
+- **Cloud only**: it does not touch your plugs locally and does not need the Kasa app running.
 
 ## Requirements
 
@@ -61,27 +60,31 @@ Some Kasa plugs firmware-flip the account setting **Me, Third-Party Compatibilit
 
 ## Configuration
 
-Sign in with your Kasa / TP-Link email and password. If the account uses two-factor authentication, TP-Link emails a code and the setup asks for it once; this device is then trusted so later sign-ins skip the step. Credentials are stored in Home Assistant and used only for the compatibility calls.
+Sign in with your Kasa / TP-Link email and password. If the account uses two-factor authentication, complete the challenge once (an emailed code, or an approval in the Kasa app); this device is then trusted so later sign-ins skip the step. Credentials are stored in Home Assistant and used only for the compatibility calls.
 
-Options (gear icon on the integration) let you turn **auto-heal** off if you prefer to flip compatibility by hand.
+Options (gear icon on the integration) mirror the enforcement switch: turning enforcement off leaves the setting alone so you can manage it by hand.
 
 ## Entities
 
-Per plug:
+One device per account:
 
 | Entity | Type | Purpose |
 |---|---|---|
-| Home Assistant compatibility | `switch` | Turn HA compatibility on or off for that plug |
+| Home Assistant compatibility | `switch` | Enforcement toggle: on re-applies the setting every poll; off stops enforcing and turns it off once |
+| Refresh now | `button` | Run a poll (and the enforce) immediately, by hand or from an automation |
 | Compatibility state | `sensor` (diagnostic) | `compatible`, `tpap`, or `unknown` |
+| Last check | `sensor` (diagnostic, timestamp) | When the integration last polled |
+
+The default poll interval is **15 minutes**; press **Refresh now** (or call `button.press` on it) to enforce immediately.
 
 ## How it works
 
-It talks to the TP-Link NBU IoT cloud, the same calls the Kasa app makes: a classic account login, then account-level and per-device compatibility settings on the regional app server. Setting compatibility on is a `POST` of `homeAssistantCompatibility`; the per-device preference is a `PATCH` of `thirdPartyCompatibility`.
+It talks to the TP-Link NBU IoT cloud, the same calls the Kasa app makes: a classic account login, then the account-level compatibility setting on the regional app server. The setting is written with a `POST` of `homeAssistantCompatibility`, which echoes the new value. There is no readable `GET` for it (the endpoint returns `400 "missing request parameter"`), so with enforcement on the integration simply re-applies `on` each poll rather than reading first.
 
 ## Troubleshooting
 
 - **Setup says the code was wrong**: request a fresh code (re-run setup) and enter the newest one; codes expire quickly.
-- **A plug still shows unavailable in the `tplink` integration**: give the self-heal one poll cycle, or toggle the plug's compatibility switch on manually. The Kasa-app toggle is always a valid fallback.
+- **A plug is still unavailable in the `tplink` integration**: press **Refresh now** to enforce immediately, or wait for the next poll. The Kasa-app toggle is always a valid fallback.
 - Turn on debug logging for `custom_components.tplink_tpap` to see the cloud calls.
 
 ## Credits and license

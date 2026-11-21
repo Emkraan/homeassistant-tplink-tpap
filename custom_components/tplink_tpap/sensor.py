@@ -1,7 +1,8 @@
-"""Diagnostic sensor: current account compatibility state."""
+"""Diagnostic sensors: current compatibility state and the last check timestamp."""
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import ClassVar
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
@@ -20,21 +21,12 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator: TplinkTpapCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([TplinkTpapStateSensor(coordinator)])
+    async_add_entities([TplinkTpapStateSensor(coordinator), TplinkTpapLastCheckSensor(coordinator)])
 
 
-class TplinkTpapStateSensor(CoordinatorEntity[TplinkTpapCoordinator], SensorEntity):
-    """Reports compatible / tpap / unknown for the account."""
-
+class _BaseSensor(CoordinatorEntity[TplinkTpapCoordinator], SensorEntity):
     _attr_has_entity_name = True
-    _attr_translation_key = "compatibility_state"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_device_class = SensorDeviceClass.ENUM
-    _attr_options: ClassVar[list[str]] = ["compatible", "tpap", "unknown"]
-
-    def __init__(self, coordinator: TplinkTpapCoordinator) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.entry.entry_id}_compat_state"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -44,9 +36,36 @@ class TplinkTpapStateSensor(CoordinatorEntity[TplinkTpapCoordinator], SensorEnti
             manufacturer=MANUFACTURER,
         )
 
+
+class TplinkTpapStateSensor(_BaseSensor):
+    """Reports compatible / tpap / unknown for the account."""
+
+    _attr_translation_key = "compatibility_state"
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options: ClassVar[list[str]] = ["compatible", "tpap", "unknown"]
+
+    def __init__(self, coordinator: TplinkTpapCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_compat_state"
+
     @property
     def native_value(self) -> str:
         compatible = self.coordinator.data.get("compatible")
         if compatible is None:
             return "unknown"
         return "compatible" if compatible else "tpap"
+
+
+class TplinkTpapLastCheckSensor(_BaseSensor):
+    """Timestamp of the last poll, so it is visible that the integration is alive."""
+
+    _attr_translation_key = "last_check"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+
+    def __init__(self, coordinator: TplinkTpapCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_last_check"
+
+    @property
+    def native_value(self) -> datetime | None:
+        return self.coordinator.data.get("last_check")

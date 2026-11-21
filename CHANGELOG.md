@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026.11.6
+
+- The switch is now an enforcement toggle: on means re-apply Home Assistant compatibility every poll; off stops enforcing and turns it off once, so turning the switch off now sticks instead of being re-enabled on the next poll.
+- Added a Refresh now button that runs a poll (and the enforce) on demand, for manual use or automations.
+- Poll interval is now 15 minutes (was 5); the button covers "enforce right now", so the steady poll can be gentle on the cloud API.
+- Added a Last check timestamp sensor so it is visible that the integration is alive and polling.
+- Reworded the two-factor step: it no longer claims the code is emailed, since some accounts approve in the Kasa app instead.
+- Note: a poll that found the setting off cannot be surfaced as a distinct event. The `POST` echoes only the new value, with no prior value or changed flag (verified live by an on/off/on cycle), and there is no readable `GET`, so "found off" is not detectable. Each enforce is logged at INFO instead.
+
 ## 2026.11.5
 
 - Fix the entry getting stuck in setup: `GET /v1/account/common-config` is not readable. Verified live against the account, it returns `400 "missing request parameter"` for every known query shape (no params, `keys`, `configKeys`, `key`, `configKey`, `names`, and the standard app query), while `GET /v2/things` with the same auth returns 200.
