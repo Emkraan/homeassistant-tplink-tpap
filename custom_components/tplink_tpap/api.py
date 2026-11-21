@@ -251,21 +251,18 @@ class TplinkTpapClient:
         except (aiohttp.ClientError, TimeoutError) as err:
             raise TplinkTpapError(f"{method} {path} failed: {err}") from err
 
-    async def get_account_compatibility(self) -> bool | None:
-        """Return True if Home Assistant compatibility is on at the account level.
-
-        ``GET /v1/account/common-config`` returns ``{"homeAssistantCompatibility": "on"|"off"}``.
-        None means the field was absent (unknown). This is the single readable TPAP state;
-        there is no readable per-device endpoint (the per-device preference is PATCH-only).
-        """
-        data = await self._app_request("GET", "/v1/account/common-config")
-        value = data.get("homeAssistantCompatibility") if isinstance(data, dict) else None
-        if value in ("on", "off"):
-            return value == "on"
-        return None
-
     async def set_account_compatibility(self, on: bool) -> bool:
-        """Set account-level Home Assistant compatibility. Returns the new state."""
+        """Set account-level Home Assistant compatibility and return the resulting state.
+
+        ``POST /v1/account/common-config`` with ``{"homeAssistantCompatibility": "on"|"off"}``
+        returns 200 and echoes the stored value, so the POST response is the state.
+
+        There is no readable GET: ``GET /v1/account/common-config`` returns
+        ``400 "missing request parameter"`` for every known query shape (verified live against
+        the account: no params, ``keys``, ``configKeys``, ``key``, ``configKey``, ``names``,
+        and the standard app query all 400), while ``GET /v2/things`` with the same auth returns
+        200. The integration therefore reads state only by writing it (the POST echo).
+        """
         body = {"homeAssistantCompatibility": "on" if on else "off"}
         data = await self._app_request("POST", "/v1/account/common-config", body)
         value = data.get("homeAssistantCompatibility") if isinstance(data, dict) else None
