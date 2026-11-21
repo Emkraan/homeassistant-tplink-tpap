@@ -31,7 +31,7 @@
       "init": {
         "title": "Options",
         "data": {
-          "auto_heal": "Automatically re-enable compatibility when the account setting is turned off"
+          "auto_heal": "Keep Home Assistant compatibility on by re-applying it on every poll"
         }
       }
     }

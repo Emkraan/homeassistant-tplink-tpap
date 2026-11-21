@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026.11.5
+
+- Fix the entry getting stuck in setup: `GET /v1/account/common-config` is not readable. Verified live against the account, it returns `400 "missing request parameter"` for every known query shape (no params, `keys`, `configKeys`, `key`, `configKey`, `names`, and the standard app query), while `GET /v2/things` with the same auth returns 200.
+- Read state by writing it instead: the `POST` to that path returns 200 and echoes the stored value (verified). With auto-heal on (the default), each poll POSTs `on`, which keeps the account's plugs reachable and reports the echoed state. With auto-heal off the state is reported as unknown, since there is no readable GET.
+
 ## 2026.11.4
 
 - Redesign to the account-level Home Assistant compatibility setting. The previous per-device read hit `GET /v1/things/{name}/features/thirdPartyCompatibility`, which is not a real endpoint (the Kasa app only ever PATCHes it), so every device returned 404 and no entities were created.

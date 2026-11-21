@@ -46,9 +46,7 @@ class TplinkTpapSwitch(CoordinatorEntity[TplinkTpapCoordinator], SwitchEntity):
         return self.coordinator.data.get("compatible")
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        await self.coordinator.client.set_account_compatibility(True)
-        await self.coordinator.async_request_refresh()
+        await self.coordinator.async_set_compatibility(True)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        await self.coordinator.client.set_account_compatibility(False)
-        await self.coordinator.async_request_refresh()
+        await self.coordinator.async_set_compatibility(False)
