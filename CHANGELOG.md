@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026.11.2
+
+- Support two-factor authentication: when TP-Link challenges with MFA, a code is emailed and the config flow prompts for it, then binds this device so future sign-ins skip MFA.
+- Never crash the config flow on an unexpected login response (the "Unknown error" case); surface a clear message instead.
+
 ## 2026.11.1
 
 - Fix setup failing with "Unknown error": build the TLS context in an executor instead of the event loop.
