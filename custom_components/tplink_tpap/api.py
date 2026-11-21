@@ -225,7 +225,7 @@ class TplinkTpapClient:
             "Content-Type": "application/json; charset=UTF-8",
         }
 
-    async def _app_request(self, method: str, path: str, json_body=None, ok_404: bool = False):
+    async def _app_request(self, method: str, path: str, json_body=None):
         import json as _json
 
         assert self._app_server
@@ -242,8 +242,6 @@ class TplinkTpapClient:
                 text = await resp.text()
                 if resp.status == 401:
                     raise TplinkTpapAuthError("app-server rejected the token")
-                if resp.status == 404 and ok_404:
-                    return None
                 if resp.status >= 400:
                     raise TplinkTpapError(f"{method} {path} -> {resp.status}: {text[:200]}")
                 try:
@@ -253,17 +251,17 @@ class TplinkTpapClient:
         except (aiohttp.ClientError, TimeoutError) as err:
             raise TplinkTpapError(f"{method} {path} failed: {err}") from err
 
-    async def get_things(self) -> list[dict]:
-        """Return the account's devices (plugs) from the app server."""
-        data = await self._app_request("GET", "/v2/things")
-        return data.get("data", []) if isinstance(data, dict) else []
-
     async def get_account_compatibility(self) -> bool | None:
         """Return True if Home Assistant compatibility is on at the account level.
 
-        Read is confirmed by writing the same value back (the POST echoes state);
-        a pure GET needs an undiscovered query parameter, so None means unknown.
+        ``GET /v1/account/common-config`` returns ``{"homeAssistantCompatibility": "on"|"off"}``.
+        None means the field was absent (unknown). This is the single readable TPAP state;
+        there is no readable per-device endpoint (the per-device preference is PATCH-only).
         """
+        data = await self._app_request("GET", "/v1/account/common-config")
+        value = data.get("homeAssistantCompatibility") if isinstance(data, dict) else None
+        if value in ("on", "off"):
+            return value == "on"
         return None
 
     async def set_account_compatibility(self, on: bool) -> bool:
@@ -272,26 +270,3 @@ class TplinkTpapClient:
         data = await self._app_request("POST", "/v1/account/common-config", body)
         value = data.get("homeAssistantCompatibility") if isinstance(data, dict) else None
         return value == "on"
-
-    async def get_device_tpap_preferred(self, thing_name: str) -> bool | None:
-        """Read a device's TPAP preference. True = on TPAP (HA-incompatible).
-
-        Returns None when the device has no thirdPartyCompatibility feature (404),
-        so such devices are skipped rather than failing the whole setup.
-        """
-        data = await self._app_request(
-            "GET",
-            f"/v1/things/{thing_name}/features/thirdPartyCompatibility",
-            ok_404=True,
-        )
-        if isinstance(data, dict) and "tpap_preferred" in data:
-            return bool(data["tpap_preferred"])
-        return None
-
-    async def set_device_tpap_preferred(self, thing_name: str, preferred: bool) -> None:
-        """Per-device preference. preferred=False means HA-compatible protocol is preferred."""
-        await self._app_request(
-            "PATCH",
-            f"/v1/things/{thing_name}/features/thirdPartyCompatibility",
-            {"tpap_preferred": preferred},
-        )

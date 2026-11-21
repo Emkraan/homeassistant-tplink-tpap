@@ -1,4 +1,4 @@
-"""Data coordinator: list plugs, read TPAP state, and self-heal flipped plugs."""
+"""Data coordinator: read the account Home Assistant compatibility setting and self-heal."""
 
 from __future__ import annotations
 
@@ -23,7 +23,14 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class TplinkTpapCoordinator(DataUpdateCoordinator[dict]):
-    """Polls the NBU cloud for plugs and their TPAP compatibility state."""
+    """Polls the NBU cloud for the account Home Assistant compatibility setting.
+
+    The setting is account level: ``GET /v1/account/common-config`` returns
+    ``homeAssistantCompatibility: on|off``. It is the single switch that keeps the
+    account's plugs reachable by the local ``tplink`` integration. There is no readable
+    per-device endpoint (the per-device ``thirdPartyCompatibility`` is PATCH-only), so the
+    integration models the account setting rather than one entity per plug.
+    """
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         super().__init__(
@@ -54,43 +61,22 @@ class TplinkTpapCoordinator(DataUpdateCoordinator[dict]):
         try:
             await self._ensure_login()
             try:
-                things = await self.client.get_things()
+                compatible = await self.client.get_account_compatibility()
             except TplinkTpapAuthError:
                 # token expired: re-login once and retry.
                 self._logged_in = False
                 await self._ensure_login()
-                things = await self.client.get_things()
+                compatible = await self.client.get_account_compatibility()
 
-            plugs: list[dict] = []
-            for thing in things:
-                if thing.get("category") != "plug" and not str(
-                    thing.get("thingModelId", "")
-                ).startswith("kasa:plug"):
-                    continue
-                name = thing.get("thingName")
-                preferred = await self.client.get_device_tpap_preferred(name)
-                if preferred is None:
-                    # Device has no thirdPartyCompatibility feature (404); skip it.
-                    continue
-                plug = {
-                    "thingName": name,
-                    "alias": thing.get("deviceAlias") or thing.get("alias") or name,
-                    "model": thing.get("model", ""),
-                    "tpap_preferred": preferred,
-                }
-                plugs.append(plug)
+            # Self-heal: the setting reading off means a plug flip turned it off; put it
+            # back on so the local tplink integration keeps working.
+            if self.auto_heal and compatible is False:
+                _LOGGER.info(
+                    "Account Home Assistant compatibility is off; re-enabling it",
+                )
+                compatible = await self.client.set_account_compatibility(True)
 
-                # Self-heal: a plug sitting on TPAP (preferred True) is HA-incompatible.
-                if self.auto_heal and preferred is True:
-                    _LOGGER.info(
-                        "Plug %s flipped to TPAP; re-enabling Home Assistant compatibility",
-                        plug["alias"],
-                    )
-                    await self.client.set_account_compatibility(True)
-                    await self.client.set_device_tpap_preferred(name, False)
-                    plug["tpap_preferred"] = False
-
-            return {"plugs": plugs}
+            return {"compatible": compatible}
         except TplinkTpapAuthError as err:
             raise UpdateFailed(f"authentication failed: {err}") from err
         except TplinkTpapError as err:

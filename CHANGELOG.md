@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026.11.4
+
+- Redesign to the account-level Home Assistant compatibility setting. The previous per-device read hit `GET /v1/things/{name}/features/thirdPartyCompatibility`, which is not a real endpoint (the Kasa app only ever PATCHes it), so every device returned 404 and no entities were created.
+- Read the real, account-level setting with `GET /v1/account/common-config` (`homeAssistantCompatibility` on/off), expose it as one switch and one compatibility-state sensor, and self-heal by turning it back on when it reads off.
+
 ## 2026.11.3
 
 - Do not fail setup when a device has no thirdPartyCompatibility feature: devices that return 404 (for example the HS300 power strip) are skipped instead of erroring the whole entry.
