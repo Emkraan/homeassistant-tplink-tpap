@@ -31,14 +31,20 @@
       "init": {
         "title": "Options",
         "data": {
-          "auto_heal": "Automatically re-enable compatibility when a plug flips to TPAP"
+          "auto_heal": "Automatically re-enable compatibility when the account setting is turned off"
         }
       }
     }
   },
   "entity": {
+    "switch": {
+      "ha_compatibility": {
+        "name": "Home Assistant compatibility"
+      }
+    },
     "sensor": {
       "compatibility_state": {
+        "name": "Compatibility state",
         "state": {
           "compatible": "Compatible",
           "tpap": "TPAP",
