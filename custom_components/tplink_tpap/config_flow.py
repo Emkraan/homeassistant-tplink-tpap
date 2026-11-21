@@ -34,7 +34,6 @@ class TplinkTpapConfigFlow(ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         self._client: TplinkTpapClient | None = None
         self._data: dict[str, Any] = {}
-        self._mfa_email: str | None = None
 
     def _entry_data(self) -> dict[str, Any]:
         return {
@@ -62,8 +61,7 @@ class TplinkTpapConfigFlow(ConfigFlow, domain=DOMAIN):
             )
             try:
                 await self._client.login()
-            except TplinkTpapMfaRequired as mfa:
-                self._mfa_email = mfa.mfa_email
+            except TplinkTpapMfaRequired:
                 return await self.async_step_mfa()
             except TplinkTpapAuthError:
                 errors["base"] = "invalid_auth"
@@ -96,7 +94,6 @@ class TplinkTpapConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="mfa",
             data_schema=vol.Schema({vol.Required("code"): str}),
             errors=errors,
-            description_placeholders={"email": self._mfa_email or "your account email"},
         )
 
     @staticmethod

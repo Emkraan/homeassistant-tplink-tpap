@@ -1,4 +1,9 @@
-"""Account-level switch: Home Assistant compatibility (on = HA-compatible, off = TPAP)."""
+"""Account-level enforcement switch.
+
+On means enforce Home Assistant compatibility: every poll POSTs ``on`` so a plug that firmware-flips
+the account setting off is put back. Off means stop enforcing (so the setting is left alone) and POST
+``off`` once, so turning the switch off actually sticks instead of being re-enabled on the next poll.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +16,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import ACCOUNT_NAME, DOMAIN, MANUFACTURER
+from .const import ACCOUNT_NAME, CONF_AUTO_HEAL, DOMAIN, MANUFACTURER
 from .coordinator import TplinkTpapCoordinator
 
 
@@ -23,7 +28,7 @@ async def async_setup_entry(
 
 
 class TplinkTpapSwitch(CoordinatorEntity[TplinkTpapCoordinator], SwitchEntity):
-    """Account-level Home Assistant compatibility switch."""
+    """Enforcement toggle for account Home Assistant compatibility."""
 
     _attr_has_entity_name = True
     _attr_translation_key = "ha_compatibility"
@@ -42,11 +47,21 @@ class TplinkTpapSwitch(CoordinatorEntity[TplinkTpapCoordinator], SwitchEntity):
         )
 
     @property
-    def is_on(self) -> bool | None:
-        return self.coordinator.data.get("compatible")
+    def is_on(self) -> bool:
+        # The switch reflects enforcement, not a (non-readable) live account value.
+        return self.coordinator.auto_heal
+
+    def _set_enforcement(self, on: bool) -> None:
+        entry = self.coordinator.entry
+        self.hass.config_entries.async_update_entry(
+            entry, options={**entry.options, CONF_AUTO_HEAL: on}
+        )
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        await self.coordinator.async_set_compatibility(True)
+        # Enabling enforcement: the options-update listener refreshes, which POSTs on.
+        self._set_enforcement(True)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
+        # POST off once so it sticks, then stop enforcing so it is not re-enabled next poll.
         await self.coordinator.async_set_compatibility(False)
+        self._set_enforcement(False)

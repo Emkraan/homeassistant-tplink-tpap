@@ -11,7 +11,7 @@
       },
       "mfa": {
         "title": "Two-factor verification",
-        "description": "Enter the verification code TP-Link just sent to {email}. This device is then trusted, so future sign-ins skip this step.",
+        "description": "Enter the verification code from your TP-Link two-factor method (an email, or an approval in your Kasa app), then submit. This device is then trusted, so future sign-ins skip this step.",
         "data": {
           "code": "Verification code"
         }
@@ -42,6 +42,11 @@
         "name": "Home Assistant compatibility"
       }
     },
+    "button": {
+      "refresh_now": {
+        "name": "Refresh now"
+      }
+    },
     "sensor": {
       "compatibility_state": {
         "name": "Compatibility state",
@@ -50,6 +55,9 @@
           "tpap": "TPAP",
           "unknown": "Unknown"
         }
+      },
+      "last_check": {
+        "name": "Last check"
       }
     }
   }
