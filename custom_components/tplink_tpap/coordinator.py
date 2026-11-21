@@ -69,6 +69,9 @@ class TplinkTpapCoordinator(DataUpdateCoordinator[dict]):
                     continue
                 name = thing.get("thingName")
                 preferred = await self.client.get_device_tpap_preferred(name)
+                if preferred is None:
+                    # Device has no thirdPartyCompatibility feature (404); skip it.
+                    continue
                 plug = {
                     "thingName": name,
                     "alias": thing.get("deviceAlias") or thing.get("alias") or name,

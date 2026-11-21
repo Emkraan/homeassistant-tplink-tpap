@@ -225,28 +225,33 @@ class TplinkTpapClient:
             "Content-Type": "application/json; charset=UTF-8",
         }
 
-    async def _app_request(self, method: str, path: str, json_body=None):
+    async def _app_request(self, method: str, path: str, json_body=None, ok_404: bool = False):
         import json as _json
 
         assert self._app_server
         data = _json.dumps(json_body) if json_body is not None else None
-        async with self.session.request(
-            method,
-            self._app_server + path,
-            data=data,
-            headers=self._app_headers(),
-            ssl=await self._ssl_ctx(),
-            timeout=aiohttp.ClientTimeout(total=20),
-        ) as resp:
-            text = await resp.text()
-            if resp.status == 401:
-                raise TplinkTpapAuthError("app-server rejected the token")
-            if resp.status >= 400:
-                raise TplinkTpapError(f"{method} {path} -> {resp.status}: {text[:200]}")
-            try:
-                return _json.loads(text) if text else {}
-            except ValueError:
-                return {}
+        try:
+            async with self.session.request(
+                method,
+                self._app_server + path,
+                data=data,
+                headers=self._app_headers(),
+                ssl=await self._ssl_ctx(),
+                timeout=aiohttp.ClientTimeout(total=20),
+            ) as resp:
+                text = await resp.text()
+                if resp.status == 401:
+                    raise TplinkTpapAuthError("app-server rejected the token")
+                if resp.status == 404 and ok_404:
+                    return None
+                if resp.status >= 400:
+                    raise TplinkTpapError(f"{method} {path} -> {resp.status}: {text[:200]}")
+                try:
+                    return _json.loads(text) if text else {}
+                except ValueError:
+                    return {}
+        except (aiohttp.ClientError, TimeoutError) as err:
+            raise TplinkTpapError(f"{method} {path} failed: {err}") from err
 
     async def get_things(self) -> list[dict]:
         """Return the account's devices (plugs) from the app server."""
@@ -269,9 +274,15 @@ class TplinkTpapClient:
         return value == "on"
 
     async def get_device_tpap_preferred(self, thing_name: str) -> bool | None:
-        """Read a device's TPAP preference. True = on TPAP (HA-incompatible)."""
+        """Read a device's TPAP preference. True = on TPAP (HA-incompatible).
+
+        Returns None when the device has no thirdPartyCompatibility feature (404),
+        so such devices are skipped rather than failing the whole setup.
+        """
         data = await self._app_request(
-            "GET", f"/v1/things/{thing_name}/features/thirdPartyCompatibility"
+            "GET",
+            f"/v1/things/{thing_name}/features/thirdPartyCompatibility",
+            ok_404=True,
         )
         if isinstance(data, dict) and "tpap_preferred" in data:
             return bool(data["tpap_preferred"])
