@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "TP-Link Third-Party Compatibility",
+        "description": "Sign in with your Kasa / TP-Link account. Credentials are stored locally and used only to keep Third-Party Compatibility on. Manage your account at [tp-link.com]({account_url}).",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid email or password.",
+      "cannot_connect": "Could not reach the TP-Link cloud."
+    },
+    "abort": {
+      "already_configured": "This account is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "data": {
+          "auto_heal": "Automatically re-enable compatibility when a plug flips to TPAP"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "compatibility_state": {
+        "state": {
+          "compatible": "Compatible",
+          "tpap": "TPAP",
+          "unknown": "Unknown"
+        }
+      }
+    }
+  }
+}
