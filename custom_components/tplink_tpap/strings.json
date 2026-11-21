@@ -8,10 +8,18 @@
           "email": "Email",
           "password": "Password"
         }
+      },
+      "mfa": {
+        "title": "Two-factor verification",
+        "description": "Enter the verification code TP-Link just sent to {email}. This device is then trusted, so future sign-ins skip this step.",
+        "data": {
+          "code": "Verification code"
+        }
       }
     },
     "error": {
       "invalid_auth": "Invalid email or password.",
+      "invalid_mfa": "That verification code was not accepted. Request a new one and try again.",
       "cannot_connect": "Could not reach the TP-Link cloud."
     },
     "abort": {

@@ -32,7 +32,16 @@ class TplinkTpapError(Exception):
 
 
 class TplinkTpapAuthError(TplinkTpapError):
-    """Login failed (bad credentials, locked, or MFA required)."""
+    """Login failed (bad credentials or account locked)."""
+
+
+class TplinkTpapMfaRequired(TplinkTpapError):
+    """Login needs a multi-factor code. A code has been sent to the account email."""
+
+    def __init__(self, mfa_email: str | None, mfa_type: int) -> None:
+        super().__init__("MFA required")
+        self.mfa_email = mfa_email
+        self.mfa_type = mfa_type
 
 
 @dataclass
@@ -47,6 +56,8 @@ class TplinkTpapClient:
     _region: str | None = field(default=None, init=False)
     _app_server: str | None = field(default=None, init=False)
     _ssl: ssl.SSLContext | None = field(default=None, init=False)
+    _mfa_process_id: str | None = field(default=None, init=False)
+    _mfa_type: int = field(default=1, init=False)
 
     def _build_ssl(self) -> ssl.SSLContext:
         # Trust the public CAs plus TP-Link's private CA chain (bundled).
@@ -77,45 +88,105 @@ class TplinkTpapClient:
             "termMeta": "Pixel",
         }
 
-    async def login(self) -> None:
-        """Classic V2 login; stores the token and resolves the regional app server."""
+    async def _post_v2(self, path: str, body: dict) -> dict:
+        """Signed V2 POST to the login host. Returns the decoded JSON envelope."""
         import json
 
-        body = {
-            "appType": APP_TYPE,
-            "appVersion": APP_VER,
-            "cloudPassword": self.password,
-            "cloudUserName": self.email,
-            "platform": "Android",
-            "refreshTokenNeeded": True,
-            "supportBindAccount": False,
-            "terminalUUID": self.terminal_uuid,
-            "terminalName": "Pixel",
-            "terminalMeta": "Pixel",
-        }
         body_json = json.dumps(body)
         headers = {
             "User-Agent": USER_AGENT,
             "Content-Type": "application/json;charset=UTF-8",
-            **get_signing_headers(body_json, LOGIN_PATH),
+            **get_signing_headers(body_json, path),
         }
-        async with self.session.post(
-            LOGIN_HOST + LOGIN_PATH,
-            data=body_json,
-            params=self._query,
-            headers=headers,
-            ssl=await self._ssl_ctx(),
-            timeout=aiohttp.ClientTimeout(total=20),
-        ) as resp:
-            data = await resp.json(content_type=None)
-        if data.get("error_code") != 0:
-            code = data.get("error_code")
-            msg = data.get("msg") or f"login failed (error_code={code})"
-            raise TplinkTpapAuthError(msg)
-        result = data["result"]
+        try:
+            async with self.session.post(
+                LOGIN_HOST + path,
+                data=body_json,
+                params=self._query,
+                headers=headers,
+                ssl=await self._ssl_ctx(),
+                timeout=aiohttp.ClientTimeout(total=20),
+            ) as resp:
+                return await resp.json(content_type=None)
+        except (aiohttp.ClientError, TimeoutError) as err:
+            raise TplinkTpapError(f"cloud request failed: {err}") from err
+
+    def _apply_login_result(self, result: dict) -> None:
         self._token = result["token"]
         self._region = result.get("regionCode", "US")
         self._app_server = self._derive_app_server(result)
+        self._mfa_process_id = None
+
+    async def login(self) -> None:
+        """Classic V2 login.
+
+        Stores the token on success. If the account challenges with MFA, sends a
+        code to the account email and raises TplinkTpapMfaRequired; the caller then
+        collects the code and calls submit_mfa_code.
+        """
+        data = await self._post_v2(
+            LOGIN_PATH,
+            {
+                "appType": APP_TYPE,
+                "appVersion": APP_VER,
+                "cloudPassword": self.password,
+                "cloudUserName": self.email,
+                "platform": "Android",
+                "refreshTokenNeeded": True,
+                "supportBindAccount": False,
+                "terminalUUID": self.terminal_uuid,
+                "terminalName": "Pixel",
+                "terminalMeta": "Pixel",
+            },
+        )
+        if data.get("error_code") != 0:
+            raise TplinkTpapError(data.get("msg") or f"login failed ({data.get('error_code')})")
+        result = data.get("result") or {}
+        if result.get("token"):
+            self._apply_login_result(result)
+            return
+        # MFA challenge: result carries errorCode -20677 plus MFAProcessId.
+        if result.get("MFAProcessId") or str(result.get("errorCode")) == "-20677":
+            self._mfa_process_id = result.get("MFAProcessId")
+            types = result.get("supportedMFATypes") or [1]
+            self._mfa_type = types[0] if types else 1
+            await self._request_mfa_code()
+            raise TplinkTpapMfaRequired(result.get("mfaEmail"), self._mfa_type)
+        raise TplinkTpapAuthError(result.get("errorMsg") or "login failed")
+
+    async def _request_mfa_code(self) -> None:
+        """Ask the cloud to send the MFA verification code to the account email."""
+        await self._post_v2(
+            "/api/v2/account/getPushVC4TerminalMFA",
+            {
+                "appType": APP_TYPE,
+                "cloudPassword": self.password,
+                "cloudUserName": self.email,
+                "locale": "en_US",
+                "terminalUUID": self.terminal_uuid,
+            },
+        )
+
+    async def submit_mfa_code(self, code: str) -> None:
+        """Verify the MFA code and bind this terminal so future logins skip MFA."""
+        data = await self._post_v2(
+            "/api/v2/account/checkMFACodeAndLogin",
+            {
+                "appType": APP_TYPE,
+                "cloudUserName": self.email,
+                "code": code.strip(),
+                "MFAProcessId": self._mfa_process_id,
+                "MFAType": self._mfa_type,
+                "supportBindAccount": False,
+                "terminalBindEnabled": True,
+            },
+        )
+        if data.get("error_code") != 0:
+            raise TplinkTpapError(data.get("msg") or f"MFA failed ({data.get('error_code')})")
+        result = data.get("result") or {}
+        if not result.get("token"):
+            raise TplinkTpapAuthError(result.get("errorMsg") or "invalid MFA code")
+        self._apply_login_result(result)
 
     @staticmethod
     def _derive_app_server(result: dict) -> str:

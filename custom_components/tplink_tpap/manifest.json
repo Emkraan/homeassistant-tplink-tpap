@@ -9,5 +9,5 @@
   "issue_tracker": "https://github.com/Emkraan/homeassistant-tplink-tpap/issues",
   "loggers": ["tplink_tpap"],
   "requirements": [],
-  "version": "2026.11.1"
+  "version": "2026.11.2"
 }
