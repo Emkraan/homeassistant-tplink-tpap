@@ -10,6 +10,8 @@ on:
 jobs:
   validate:
     uses: Emkraan/ha-shared-workflows/.github/workflows/validate-integration.yml@main
+    # issues: write lets the shared workflow's scheduled-failure alert open and
+    # close its "Scheduled validation failing" issue.
     permissions:
       contents: read
       issues: write
@@ -26,7 +28,7 @@ jobs:
         run: |
           python3 - << 'PYEOF'
           import sys, pathlib
-          DASHES = '–—―'
+          DASHES = '\u2013\u2014\u2015'
           SKIP = {'.git', '.github', 'node_modules', '__pycache__', 'dist', 'build', '.venv'}
           found = False
           for path in sorted(pathlib.Path('.').rglob('*.md')):
@@ -50,10 +52,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+
       - name: Install ruff
         run: pip install ruff==0.17.6
+
       - name: Ruff lint
         run: ruff check .
+
       - name: Ruff format
         run: ruff format --check .
 

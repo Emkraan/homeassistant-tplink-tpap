@@ -1,5 +1,13 @@
 name: automerge
 
+# Thin caller. All merge logic lives in the fleet reusable workflow
+# Emkraan/.github/.github/workflows/reusable-automerge.yml (standard: apollo
+# docs/standards/github-repo-standard.md Section 8). Never add merge logic here; change
+# the reusable workflow instead. Only the triggers are repo-specific:
+# `workflow_run.workflows` must list EVERY workflow in this repo that runs on
+# pull_request (matched by workflow `name:`, not job name), so automerge re-evaluates
+# after the last PR check finishes.
+
 on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review, closed]
