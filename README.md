@@ -53,10 +53,11 @@ Some Kasa plugs firmware-flip the account setting **Me, Third-Party Compatibilit
 
 ## Installation
 
-1. In HACS, open the three-dot menu and choose **Custom repositories**.
-2. Add `https://github.com/Emkraan/homeassistant-tplink-tpap` as an **Integration**.
-3. Install **TP-Link Third-Party Compatibility**, then restart Home Assistant.
-4. Go to **Settings -> Devices & Services -> Add Integration** and pick **TP-Link Third-Party Compatibility**.
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Emkraan&repository=homeassistant-tplink-tpap&category=integration)
+
+1. Click the badge above, or in HACS open the three-dot menu, choose **Custom repositories**, and add `https://github.com/Emkraan/homeassistant-tplink-tpap` as an **Integration**.
+2. Install **TP-Link Third-Party Compatibility**, then restart Home Assistant.
+3. Go to **Settings -> Devices & Services -> Add Integration** and pick **TP-Link Third-Party Compatibility**.
 
 ## Configuration
 
