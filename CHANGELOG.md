@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026.11.3
+
+- Do not fail setup when a device has no thirdPartyCompatibility feature: devices that return 404 (for example the HS300 power strip) are skipped instead of erroring the whole entry.
+- Treat a network error on an app-server call as a clean retry rather than an unexpected failure.
+
 ## 2026.11.2
 
 - Support two-factor authentication: when TP-Link challenges with MFA, a code is emailed and the config flow prompts for it, then binds this device so future sign-ins skip MFA.
