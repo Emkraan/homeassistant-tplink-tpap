@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussions (questions & help)
+    url: https://github.com/Emkraan/homeassistant-tplink-tpap/discussions
+    about: Ask questions and get help from the community
+  - name: Home Assistant Community
+    url: https://community.home-assistant.io/
+    about: General Home Assistant help and discussion
