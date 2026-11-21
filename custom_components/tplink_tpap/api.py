@@ -10,6 +10,7 @@ headers, over plain TLS (no client certificate, no JWT for REST).
 
 from __future__ import annotations
 
+import asyncio
 import ssl
 import uuid
 from dataclasses import dataclass, field
@@ -47,12 +48,18 @@ class TplinkTpapClient:
     _app_server: str | None = field(default=None, init=False)
     _ssl: ssl.SSLContext | None = field(default=None, init=False)
 
-    def _ssl_ctx(self) -> ssl.SSLContext:
+    def _build_ssl(self) -> ssl.SSLContext:
         # Trust the public CAs plus TP-Link's private CA chain (bundled).
+        ctx = ssl.create_default_context()
+        ctx.load_verify_locations(cafile=get_ca_cert_path())
+        return ctx
+
+    async def _ssl_ctx(self) -> ssl.SSLContext:
+        # Build off the event loop: create_default_context / load_verify_locations
+        # do blocking disk I/O, which Home Assistant forbids inside the loop.
         if self._ssl is None:
-            ctx = ssl.create_default_context()
-            ctx.load_verify_locations(cafile=get_ca_cert_path())
-            self._ssl = ctx
+            loop = asyncio.get_running_loop()
+            self._ssl = await loop.run_in_executor(None, self._build_ssl)
         return self._ssl
 
     @property
@@ -97,7 +104,7 @@ class TplinkTpapClient:
             data=body_json,
             params=self._query,
             headers=headers,
-            ssl=self._ssl_ctx(),
+            ssl=await self._ssl_ctx(),
             timeout=aiohttp.ClientTimeout(total=20),
         ) as resp:
             data = await resp.json(content_type=None)
@@ -157,7 +164,7 @@ class TplinkTpapClient:
             self._app_server + path,
             data=data,
             headers=self._app_headers(),
-            ssl=self._ssl_ctx(),
+            ssl=await self._ssl_ctx(),
             timeout=aiohttp.ClientTimeout(total=20),
         ) as resp:
             text = await resp.text()
@@ -187,9 +194,7 @@ class TplinkTpapClient:
         """Set account-level Home Assistant compatibility. Returns the new state."""
         body = {"homeAssistantCompatibility": "on" if on else "off"}
         data = await self._app_request("POST", "/v1/account/common-config", body)
-        value = (
-            data.get("homeAssistantCompatibility") if isinstance(data, dict) else None
-        )
+        value = data.get("homeAssistantCompatibility") if isinstance(data, dict) else None
         return value == "on"
 
     async def get_device_tpap_preferred(self, thing_name: str) -> bool | None:

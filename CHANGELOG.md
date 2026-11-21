@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026.11.1
+
+- Fix setup failing with "Unknown error": build the TLS context in an executor instead of the event loop.
+- Move to the Emkraan org with the standard HA integration repo layout (validate CI, ruff, brand icon, renovate, security policy).
+
 ## 2026.11.0
 
 - Initial release.

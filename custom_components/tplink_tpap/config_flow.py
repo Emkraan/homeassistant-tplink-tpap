@@ -26,9 +26,7 @@ class TplinkTpapConfigFlow(ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
             await self.async_set_unique_id(user_input["email"].lower())
@@ -73,9 +71,7 @@ class TplinkTpapConfigFlow(ConfigFlow, domain=DOMAIN):
 class TplinkTpapOptionsFlow(OptionsFlow):
     """Toggle auto-heal."""
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             return self.async_create_entry(data=user_input)
         current = self.config_entry.options.get(CONF_AUTO_HEAL, DEFAULT_AUTO_HEAL)

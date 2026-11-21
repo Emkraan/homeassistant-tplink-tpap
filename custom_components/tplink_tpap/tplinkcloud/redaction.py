@@ -7,9 +7,7 @@ REDACTED = "<redacted>"
 
 def _is_credential_key(key):
     name = key.lower()
-    return name == "code" or any(
-        word in name for word in ("password", "token", "secret")
-    )
+    return name == "code" or any(word in name for word in ("password", "token", "secret"))
 
 
 def redact(value):
@@ -21,9 +19,7 @@ def redact(value):
     if isinstance(value, dict):
         return {
             key: REDACTED
-            if isinstance(key, str)
-            and _is_credential_key(key)
-            and not isinstance(item, bool)
+            if isinstance(key, str) and _is_credential_key(key) and not isinstance(item, bool)
             else redact(item)
             for key, item in value.items()
         }

@@ -1,12 +1,13 @@
 {
   "domain": "tplink_tpap",
   "name": "TP-Link Third-Party Compatibility",
-  "codeowners": ["@cmarko89"],
+  "codeowners": ["@Emkraan"],
   "config_flow": true,
-  "documentation": "https://github.com/cmarko89/homeassistant-tplink-tpap",
+  "documentation": "https://github.com/Emkraan/homeassistant-tplink-tpap",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/cmarko89/homeassistant-tplink-tpap/issues",
+  "issue_tracker": "https://github.com/Emkraan/homeassistant-tplink-tpap/issues",
+  "loggers": ["tplink_tpap"],
   "requirements": [],
-  "version": "2026.11.0"
+  "version": "2026.11.1"
 }

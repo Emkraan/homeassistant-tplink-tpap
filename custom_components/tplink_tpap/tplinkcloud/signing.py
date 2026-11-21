@@ -73,10 +73,7 @@ def compute_signature(
     ).hexdigest()
 
     authorization = (
-        f"Timestamp={SIGNING_TIMESTAMP}, "
-        f"Nonce={nonce}, "
-        f"AccessKey={ak}, "
-        f"Signature={signature}"
+        f"Timestamp={SIGNING_TIMESTAMP}, Nonce={nonce}, AccessKey={ak}, Signature={signature}"
     )
 
     return content_md5, authorization
@@ -99,9 +96,7 @@ def get_signing_headers(
     Returns:
         Dict with Content-MD5 and X-Authorization headers.
     """
-    content_md5, authorization = compute_signature(
-        body_json, url_path, access_key, secret_key
-    )
+    content_md5, authorization = compute_signature(body_json, url_path, access_key, secret_key)
     return {
         "Content-MD5": content_md5,
         "X-Authorization": authorization,

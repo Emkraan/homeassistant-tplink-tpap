@@ -27,7 +27,7 @@ Kasa app running.
 ## Install (HACS)
 
 1. HACS -> three dots -> **Custom repositories**.
-2. Add `https://github.com/cmarko89/homeassistant-tplink-tpap` as an **Integration**.
+2. Add `https://github.com/Emkraan/homeassistant-tplink-tpap` as an **Integration**.
 3. Install **TP-Link Third-Party Compatibility**, then restart Home Assistant.
 4. **Settings -> Devices & Services -> Add Integration -> TP-Link Third-Party Compatibility**,
    and sign in with your Kasa / TP-Link account.
