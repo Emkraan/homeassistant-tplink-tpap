@@ -35,9 +35,9 @@
 
 Some Kasa plugs firmware-flip the account setting **Me, Third-Party Compatibility** off. That puts the plug on TPAP and breaks the local `tplink` integration with a `403` at `handshake1`. The only documented fix is to toggle the setting back on in the Kasa app by hand, every time it happens. This integration does it for you.
 
-- **Enforcement switch** for the account-level Home Assistant compatibility setting: on re-applies the setting every poll, so a plug that firmware-flips it off is put back; off stops enforcing and turns it off once.
-- **Refresh now button** to enforce on demand, from the dashboard or an automation, without waiting for the next poll.
-- **Last check** timestamp sensor and a **compatibility-state** sensor (`compatible`, `tpap`, `unknown`) for dashboards and automations.
+- **Compatibility reconciliation switch**: on re-applies (reconciles) the account-level Home Assistant compatibility setting every poll, so a plug that firmware-flips it off is put back; off stops reconciling and turns it off once.
+- **Refresh now button** to reconcile on demand, from the dashboard or an automation, without waiting for the next poll.
+- **Last check** timestamp sensor so you can see the integration is alive and polling.
 - **15-minute poll** by default: gentle on the cloud API, with the button covering "enforce right now".
 - **Two-factor sign-in** supported: if TP-Link challenges with MFA (an emailed code, or an approval in the Kasa app), you complete it once and the device is trusted after that.
 - **Cloud only**: it does not touch your plugs locally and does not need the Kasa app running.
@@ -62,7 +62,7 @@ Some Kasa plugs firmware-flip the account setting **Me, Third-Party Compatibilit
 
 Sign in with your Kasa / TP-Link email and password. If the account uses two-factor authentication, complete the challenge once (an emailed code, or an approval in the Kasa app); this device is then trusted so later sign-ins skip the step. Credentials are stored in Home Assistant and used only for the compatibility calls.
 
-Options (gear icon on the integration) mirror the enforcement switch: turning enforcement off leaves the setting alone so you can manage it by hand.
+Options (gear icon on the integration) mirror the reconciliation switch: turning reconciliation off leaves the setting alone so you can manage it by hand.
 
 ## Entities
 
@@ -70,9 +70,8 @@ One device per account:
 
 | Entity | Type | Purpose |
 |---|---|---|
-| Home Assistant compatibility | `switch` | Enforcement toggle: on re-applies the setting every poll; off stops enforcing and turns it off once |
-| Refresh now | `button` | Run a poll (and the enforce) immediately, by hand or from an automation |
-| Compatibility state | `sensor` (diagnostic) | `compatible`, `tpap`, or `unknown` |
+| Compatibility reconciliation | `switch` | On re-applies the setting every poll; off stops reconciling and turns it off once |
+| Refresh now | `button` | Run a poll (and the reconcile) immediately, by hand or from an automation |
 | Last check | `sensor` (diagnostic, timestamp) | When the integration last polled |
 
 The default poll interval is **15 minutes**; press **Refresh now** (or call `button.press` on it) to enforce immediately.

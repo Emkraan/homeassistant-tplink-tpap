@@ -31,15 +31,15 @@
       "init": {
         "title": "Options",
         "data": {
-          "auto_heal": "Keep Home Assistant compatibility on by re-applying it on every poll"
+          "auto_heal": "Reconcile Home Assistant compatibility (re-apply it on every poll)"
         }
       }
     }
   },
   "entity": {
     "switch": {
-      "ha_compatibility": {
-        "name": "Home Assistant compatibility"
+      "reconciliation": {
+        "name": "Compatibility reconciliation"
       }
     },
     "button": {
@@ -48,14 +48,6 @@
       }
     },
     "sensor": {
-      "compatibility_state": {
-        "name": "Compatibility state",
-        "state": {
-          "compatible": "Compatible",
-          "tpap": "TPAP",
-          "unknown": "Unknown"
-        }
-      },
       "last_check": {
         "name": "Last check"
       }
