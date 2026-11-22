@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026.11.7
+
+- Renamed the switch to "Compatibility reconciliation" so it is clear it controls reconciliation (re-applying the setting), not a live reading.
+- Removed the compatibility-state diagnostic sensor: there is no readable GET, so it could only echo the value just written and carried no real information. The Last check timestamp sensor remains.
+
 ## 2026.11.6
 
 - The switch is now an enforcement toggle: on means re-apply Home Assistant compatibility every poll; off stops enforcing and turns it off once, so turning the switch off now sticks instead of being re-enabled on the next poll.

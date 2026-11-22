@@ -1,8 +1,9 @@
-"""Account-level enforcement switch.
+"""Account-level compatibility reconciliation switch.
 
-On means enforce Home Assistant compatibility: every poll POSTs ``on`` so a plug that firmware-flips
-the account setting off is put back. Off means stop enforcing (so the setting is left alone) and POST
+On means reconcile Home Assistant compatibility: every poll POSTs ``on`` so a plug that firmware-flips
+the account setting off is put back. Off means stop reconciling (so the setting is left alone) and POST
 ``off`` once, so turning the switch off actually sticks instead of being re-enabled on the next poll.
+The entity's unique_id is kept as the original ``_ha_compatibility`` so existing installs are not orphaned.
 """
 
 from __future__ import annotations
@@ -31,8 +32,8 @@ class TplinkTpapSwitch(CoordinatorEntity[TplinkTpapCoordinator], SwitchEntity):
     """Enforcement toggle for account Home Assistant compatibility."""
 
     _attr_has_entity_name = True
-    _attr_translation_key = "ha_compatibility"
-    _attr_icon = "mdi:home-assistant"
+    _attr_translation_key = "reconciliation"
+    _attr_icon = "mdi:autorenew"
 
     def __init__(self, coordinator: TplinkTpapCoordinator) -> None:
         super().__init__(coordinator)
